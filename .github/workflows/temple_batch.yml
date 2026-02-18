@@ -1,0 +1,34 @@
+name: Temple Batch Fetcher
+
+on:
+  schedule:
+    # Run every 15 minutes
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+jobs:
+  fetch-temples:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+        cache: 'pip'
+
+    - name: Install Dependencies
+      run: |
+        pip install --upgrade pip
+        pip install requests python-slugify supabase python-dotenv
+
+    - name: Run Temple Fetcher Batch
+      env:
+        SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+        SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+      run: |
+        echo "Running batch fetch for temples..."
+        python backend/scripts/fetch_temples.py --batch_mode
