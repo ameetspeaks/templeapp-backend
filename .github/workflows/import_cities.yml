@@ -1,0 +1,31 @@
+name: Manual Import Cities
+
+on:
+  workflow_dispatch:
+
+jobs:
+  import-cities:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+        cache: 'pip'
+
+    - name: Install Dependencies
+      run: |
+        pip install --upgrade pip
+        pip install supabase python-dotenv
+
+    - name: Run Import Script
+      env:
+        SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+        SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+      run: |
+        echo "Running city import script..."
+        python scripts/import_cities.py
