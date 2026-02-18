@@ -3,6 +3,7 @@ import glob
 import tempfile
 import yt_dlp
 from app.services.cloudinary_service import CloudinaryService
+from app.services.supabase_storage_service import SupabaseStorageService
 from app.utils.logger import setup_logger
 
 logger = setup_logger("audio_pipeline")
@@ -10,10 +11,11 @@ logger = setup_logger("audio_pipeline")
 class AudioPipeline:
     def __init__(self):
         self.cloudinary = CloudinaryService()
+        self.supabase_storage = SupabaseStorageService()
 
-    def search_and_fetch_audio(self, aarti_title: str, deity: str, aarti_id: str) -> dict:
+    def search_and_fetch_audio(self, aarti_title: str, deity: str, aarti_id: str, provider: str = "SUPABASE") -> dict:
         query = f"{aarti_title} {deity} aarti original"
-        logger.info(f"Searching for: {query}")
+        logger.info(f"Searching for: {query} with provider {provider}")
         
         # Temp directory
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -50,28 +52,37 @@ class AudioPipeline:
                     source_url = video_info.get('webpage_url')
                     duration = video_info.get('duration')
                     
-                    # Generate public_id for Cloudinary
-                    public_id = f"aarti_{aarti_id}"
                     # Sanitize deity name for folder
                     safe_deity = "".join(c for c in deity if c.isalnum()).lower()
-                    folder = f"templeapp/aartis/{safe_deity}"
                     
-                    logger.info(f"Uploading to Cloudinary: {public_id}")
-                    secure_url = self.cloudinary.upload_audio(file_path, public_id, folder)
+                    secure_url = ""
+                    
+                    if provider == "CLOUDINARY":
+                        public_id = f"aarti_{aarti_id}"
+                        folder = f"templeapp/aartis/{safe_deity}"
+                        logger.info(f"Uploading to Cloudinary: {public_id}")
+                        secure_url = self.cloudinary.upload_audio(file_path, public_id, folder)
+                    else:
+                        # Supabase Storage
+                        filename = f"{aarti_id}.mp3"
+                        destination = f"{safe_deity}/{filename}"
+                        logger.info(f"Uploading to Supabase: {destination}")
+                        secure_url = self.supabase_storage.upload_file(file_path, destination)
                     
                     return {
-                        "cloudinary_url": secure_url,
+                        "audio_url": secure_url,
                         "source_url": source_url,
                         "duration_seconds": duration,
                         "file_size_mb": os.path.getsize(file_path) / (1024 * 1024),
-                        "quality": "192kbps"
+                        "quality": "192kbps",
+                        "storage_provider": provider
                     }
                     
             except Exception as e:
                 logger.error(f"Audio pipeline failed: {e}")
                 raise
 
-    def fetch_from_direct_url(self, url: str, aarti_id: str, deity: str) -> dict:
+    def fetch_from_direct_url(self, url: str, aarti_id: str, deity: str, provider: str = "SUPABASE") -> dict:
          with tempfile.TemporaryDirectory() as temp_dir:
             ydl_opts = {
                 'format': 'bestaudio/best',
@@ -97,18 +108,27 @@ class AudioPipeline:
                     file_path = files[0]
                     duration = info.get('duration')
                     
-                    public_id = f"aarti_{aarti_id}"
                     safe_deity = "".join(c for c in deity if c.isalnum()).lower()
-                    folder = f"templeapp/aartis/{safe_deity}"
                     
-                    secure_url = self.cloudinary.upload_audio(file_path, public_id, folder)
+                    secure_url = ""
                     
+                    if provider == "CLOUDINARY":
+                        public_id = f"aarti_{aarti_id}"
+                        folder = f"templeapp/aartis/{safe_deity}"
+                        secure_url = self.cloudinary.upload_audio(file_path, public_id, folder)
+                    else:
+                         # Supabase Storage
+                        filename = f"{aarti_id}.mp3"
+                        destination = f"{safe_deity}/{filename}"
+                        secure_url = self.supabase_storage.upload_file(file_path, destination)
+
                     return {
-                        "cloudinary_url": secure_url,
+                        "audio_url": secure_url,
                         "source_url": url,
                         "duration_seconds": duration,
                         "file_size_mb": os.path.getsize(file_path) / (1024 * 1024),
-                        "quality": "192kbps"
+                        "quality": "192kbps",
+                        "storage_provider": provider
                     }
             except Exception as e:
                 logger.error(f"Direct fetch failed: {e}")

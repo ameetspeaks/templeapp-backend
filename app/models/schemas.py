@@ -101,12 +101,15 @@ class AartiBatchGenerateRequest(BaseModel):
 
 class AartiFetchAudioRequest(BaseModel):
     aarti_id: str
+    storage_provider: Optional[str] = "SUPABASE" # SUPABASE, CLOUDINARY, EXTERNAL
 
 class AartiFetchAudioUrlRequest(BaseModel):
     source_url: str
+    storage_provider: Optional[str] = "SUPABASE" # SUPABASE, CLOUDINARY, EXTERNAL
 
 class AartiFetchAudioBatchRequest(BaseModel):
     limit: int = 5
+    storage_provider: Optional[str] = "SUPABASE"
 
 # --- Job ---
 class JobTriggerRequest(BaseModel):
