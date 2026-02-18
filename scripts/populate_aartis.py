@@ -17,9 +17,9 @@ async def main():
     
     logger.info("Starting Aarti Population Script")
     
-    # 1. Ask Gemini for a list of 50 Aartis
+    # 1. Ask Gemini for a list of 10 Aartis
     prompt = """
-    Generate a JSON list of 50 popular Hindu Aartis.
+    Generate a JSON list of 10 popular Hindu Aartis.
     Fields: title, deity, aarti_type (morning/evening/festival).
     Include diverse deities (Ganesh, Vishnu, Shiva, Durga, Lakshmi, Krishna, Rama, Hanuman, Sai Baba, etc.)
     and popular variations.
