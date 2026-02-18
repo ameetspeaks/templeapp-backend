@@ -19,7 +19,7 @@ jobs:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           HF_USERNAME: ${{ secrets.HF_USERNAME }}
           # Assumes Space name is 'templeapp-backend' as per setup guide
-          SPACE_NAME: templeapp-backend 
+          SPACE_NAME: templeappai 
         run: |
           git config --global user.email "actions@github.com"
           git config --global user.name "GitHub Actions"
