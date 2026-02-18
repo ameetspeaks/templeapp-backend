@@ -3,8 +3,6 @@ name: Sync Backend to Hugging Face Space
 on:
   push:
     branches: [main]
-    paths:
-      - 'backend/**'
   workflow_dispatch:
 
 jobs:
@@ -30,14 +28,5 @@ jobs:
           # We use the token for authentication
           git remote add space https://$HF_USERNAME:$HF_TOKEN@huggingface.co/spaces/$HF_USERNAME/$SPACE_NAME
           
-          # Use git subtree to push only the backend folder to the root of the Space
-          # This ensures Dockerfile is at the root as required by HF
-          # We use --force to overwrite history if needed (common in CI syncs)
-          # Note: 'git subtree push' does not support --force natively in all versions easily without split
-          
-          # Strategy: Split valid tree and push
-          git subtree split --prefix backend -b hf-sync-branch
-          git push -f space hf-sync-branch:main
-          
-          # Cleanup
-          git branch -D hf-sync-branch
+          # Push the current branch (main) to the Space
+          git push -f space main
