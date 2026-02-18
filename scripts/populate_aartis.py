@@ -58,6 +58,18 @@ async def main():
             # Use 'flash' for speed, 'pro' for quality. Flash is fine for lyrics usually.
             ai_data = await gemini.generate_json(lyrics_prompt, model="flash")
             
+            # Fix: Gemini might return a list [dict] or just dict
+            if isinstance(ai_data, list):
+                if ai_data:
+                    ai_data = ai_data[0]
+                else:
+                    logger.error(" - Empty list returned from Gemini")
+                    continue
+            
+            if not isinstance(ai_data, dict):
+                logger.error(f" - Invalid AI data format: {type(ai_data)}")
+                continue
+            
             db_data = {
                 "title": title,
                 "deity": deity,
