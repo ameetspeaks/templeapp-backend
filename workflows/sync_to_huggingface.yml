@@ -1,0 +1,43 @@
+name: Sync Backend to Hugging Face Space
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+  workflow_dispatch:
+
+jobs:
+  sync-to-hub:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          lfs: true
+
+      - name: Push to Hugging Face Space
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_USERNAME: ${{ secrets.HF_USERNAME }}
+          # Assumes Space name is 'templeapp-backend' as per setup guide
+          SPACE_NAME: templeapp-backend 
+        run: |
+          git config --global user.email "actions@github.com"
+          git config --global user.name "GitHub Actions"
+          
+          # Add Hugging Face Remote
+          # We use the token for authentication
+          git remote add space https://$HF_USERNAME:$HF_TOKEN@huggingface.co/spaces/$HF_USERNAME/$SPACE_NAME
+          
+          # Use git subtree to push only the backend folder to the root of the Space
+          # This ensures Dockerfile is at the root as required by HF
+          # We use --force to overwrite history if needed (common in CI syncs)
+          # Note: 'git subtree push' does not support --force natively in all versions easily without split
+          
+          # Strategy: Split valid tree and push
+          git subtree split --prefix backend -b hf-sync-branch
+          git push -f space hf-sync-branch:main
+          
+          # Cleanup
+          git branch -D hf-sync-branch

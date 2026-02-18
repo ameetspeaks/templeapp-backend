@@ -1,0 +1,51 @@
+name: Panchang Daily Automation
+
+on:
+  schedule:
+    # Runs at 18:30 UTC every day, which is 00:00 IST
+    # Cron syntax: minute hour day month day_of_week
+    - cron: '30 18 * * *'
+  workflow_dispatch:
+    inputs:
+      days:
+        description: 'Number of days to generate'
+        required: true
+        default: '10'
+      city:
+        description: 'City name'
+        required: true
+        default: 'Delhi'
+
+jobs:
+  generate-panchang:
+    runs-on: ubuntu-latest
+    
+    defaults:
+      run:
+        working-directory: ./backend
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+        cache: 'pip'
+
+    - name: Install Dependencies
+      run: |
+        pip install --upgrade pip
+        pip install ephem supabase python-dotenv pytz
+
+    - name: Run Panchang Generation Script
+      env:
+        SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+        SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        # Add other secrets here if your script reads them from env
+      run: |
+        DAYS=${{ github.event.inputs.days || 10 }}
+        CITY=${{ github.event.inputs.city || 'Delhi' }}
+        echo "Running generation for $DAYS days in $CITY..."
+        python scripts/generate_daily_data.py --days $DAYS --city "$CITY"
