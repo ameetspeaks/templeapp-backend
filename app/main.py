@@ -40,11 +40,10 @@ async def startup_event():
     # Note: Server time might be UTC. APScheduler handles timezone if pytz provided.
     # Assuming container runs in UTC, we need to adjust or use timezone arg.
     
-    # Add jobs but pause immediately to allow manual triggering only
-    scheduler.add_job(job_generate_blogs, 'cron', hour=6, minute=0, timezone='Asia/Kolkata', id="blog_daily").pause()
-    scheduler.add_job(job_enrich_temples, 'cron', hour=7, minute=0, timezone='Asia/Kolkata', id="temple_enrich").pause()
-    scheduler.add_job(job_generate_aarti_lyrics, 'cron', hour=9, minute=0, timezone='Asia/Kolkata', id="aarti_lyrics").pause()
-    scheduler.add_job(job_fetch_aarti_audio, 'cron', hour=10, minute=0, timezone='Asia/Kolkata', id="aarti_audio").pause()
+    # Jobs are now handled by GitHub Actions automation.
+    # We keep the scheduler running only for manual trigger endpoints if needed, 
+    # but no jobs are scheduled on startup.
+    pass
 
 @app.on_event("shutdown")
 async def shutdown_event():
