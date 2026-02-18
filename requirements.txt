@@ -1,0 +1,15 @@
+fastapi
+uvicorn
+google-generativeai
+supabase
+ephem
+apscheduler
+upstash-redis
+cloudinary
+yt-dlp
+python-dotenv
+httpx
+pydantic
+python-multipart
+Pillow
+pytz
