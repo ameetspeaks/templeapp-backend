@@ -29,15 +29,20 @@ async def generate_daily_data(start_date_str=None, days=10, city="Delhi"):
         try:
             panchang_data = engine.calculate_panchang(date_str, city)
             
+            # Prepare data for DB (remove internal fields like tithi_index)
+            db_payload = panchang_data.copy()
+            if 'tithi_index' in db_payload:
+                del db_payload['tithi_index']
+
             # Upsert Panchang
             # Check existing
             res = supabase.table("panchang_daily").select("id").eq("date", date_str).eq("city", city).execute()
             if res.data:
                 print(f"  - Updating Panchang for {date_str}")
-                supabase.table("panchang_daily").update(panchang_data).eq("id", res.data[0]['id']).execute()
+                supabase.table("panchang_daily").update(db_payload).eq("id", res.data[0]['id']).execute()
             else:
                  print(f"  - Inserting Panchang for {date_str}")
-                 supabase.table("panchang_daily").insert(panchang_data).execute()
+                 supabase.table("panchang_daily").insert(db_payload).execute()
                  
         except Exception as e:
             print(f"  ! Error generating Panchang: {e}")
