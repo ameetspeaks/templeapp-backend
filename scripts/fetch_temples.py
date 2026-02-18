@@ -142,25 +142,95 @@ def save_to_supabase(temple_data):
     except Exception as e:
         print(f"  ! Error saving {temple_data['name']}: {e}")
 
+
+def fetch_pending_city():
+    try:
+        # Get one pending city
+        # Order by random or id to distribute? Let's just take first.
+        res = supabase.table("locations").select("*").eq("status", "pending").limit(1).execute()
+        if res.data:
+            return res.data[0]
+        return None
+    except Exception as e:
+        print(f"Error fetching pending city: {e}")
+        return None
+
+def update_city_status(city_id, status, count=0):
+    try:
+        supabase.table("locations").update({
+            "status": status, 
+            "temple_count": count,
+            "last_scanned_at": "now()"
+        }).eq("id", city_id).execute()
+    except Exception as e:
+        print(f"Error updating city status: {e}")
+
+def run_batch_mode():
+    total_fetched = 0
+    max_temples_per_run = 100
+    
+    print(f"Starting batch mode. Target: {max_temples_per_run} temples.")
+    
+    while total_fetched < max_temples_per_run:
+        location = fetch_pending_city()
+        if not location:
+            print("No pending cities found.")
+            break
+            
+        city = location['city']
+        state = location['state']
+        city_id = location['id']
+        
+        print(f"Processing {city}, {state}...")
+        update_city_status(city_id, "processing")
+        
+        elements = fetch_osm_data(city, state)
+        print(f"  Found {len(elements)} items in OSM.")
+        
+        city_count = 0
+        for el in elements:
+            temple = process_element(el, city, state)
+            if temple:
+                save_to_supabase(temple)
+                city_count += 1
+                total_fetched += 1
+        
+        # Mark as completed regardless of count (we scanned it)
+        # Or if 0, maybe valid 0.
+        print(f"  Saved {city_count} temples for {city}.")
+        update_city_status(city_id, "completed", count=city_count)
+        
+        # Check overall limit
+        if total_fetched >= max_temples_per_run:
+            print(f"Batch limit reached ({total_fetched}). Stopping.")
+            break
+            
+    print(f"Batch run completed. Total temples fetched: {total_fetched}")
+
 def main():
     import argparse
     parser = argparse.ArgumentParser(description='Fetch Temples from OSM')
-    parser.add_argument('--city', type=str, required=True, help='City name')
-    parser.add_argument('--state', type=str, required=True, help='State name')
+    parser.add_argument('--city', type=str, help='City name')
+    parser.add_argument('--state', type=str, help='State name')
+    parser.add_argument('--batch_mode', action='store_true', help='Run in batch mode fetching from DB')
     
     args = parser.parse_args()
     
-    elements = fetch_osm_data(args.city, args.state)
-    print(f"Found {len(elements)} items.")
-    
-    count = 0
-    for el in elements:
-        temple = process_element(el, args.city, args.state)
-        if temple:
-            save_to_supabase(temple)
-            count += 1
-            
-    print(f"Processed {count} temples for {args.city}.")
+    if args.batch_mode:
+        run_batch_mode()
+    elif args.city and args.state:
+        # Legacy single run
+        elements = fetch_osm_data(args.city, args.state)
+        print(f"Found {len(elements)} items.")
+        count = 0
+        for el in elements:
+            temple = process_element(el, args.city, args.state)
+            if temple:
+                save_to_supabase(temple)
+                count += 1
+        print(f"Processed {count} temples for {args.city}.")
+    else:
+        print("Please provide --city and --state OR --batch_mode")
 
 if __name__ == "__main__":
     main()
