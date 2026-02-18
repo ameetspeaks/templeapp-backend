@@ -259,6 +259,40 @@ class PanchangEngine:
         yamaganda = get_time_slot(yama_indices.get(weekday, 0))
         gulika = get_time_slot(guli_indices.get(weekday, 0))
 
+        # Dictionary for simple festival/vrat lookups based on Tithi/Paksha
+        festival_name = None
+        vrat_name = None
+        
+        # Simple Logic for common Tithis
+        if tithi_name == "Ekadashi":
+            vrat_name = "Ekadashi"
+        elif tithi_name == "Purnima":
+            festival_name = "Purnima"
+            vrat_name = "Purnima Vrat"
+        elif tithi_name == "Amavasya":
+            festival_name = "Amavasya"
+            vrat_name = "Amavasya"
+        elif tithi_name == "Chaturthi":
+            if paksha == "Krishna":
+                vrat_name = "Sankashti Chaturthi"
+            else:
+                vrat_name = "Vinayaka Chaturthi"
+        elif tithi_name == "Trayodashi":
+             vrat_name = "Pradosh Vrat"
+        elif tithi_name == "Ashtami":
+             if paksha == "Krishna":
+                 # Kalashtami
+                 pass
+             else:
+                 vrat_name = "Durga Ashtami"
+
+        # Festivals list (JSONB)
+        festivals_list = []
+        if festival_name:
+            festivals_list.append(festival_name)
+        if vrat_name and vrat_name != festival_name:
+             festivals_list.append(vrat_name)
+
         return {
             "date": date_str,
             "city": city_name,
@@ -273,7 +307,14 @@ class PanchangEngine:
             "karan": karan_name,
             "rahukaal": rahukaal,
             "yamaganda": yamaganda,
-            "gulika": gulika
+            "gulika": gulika,
+            "festival": festival_name,
+            "vrat": vrat_name,
+            "festivals": festivals_list, # For JSONB column
+            "status": "complete",
+            "hindi_description": None, # Placeholder for now
+            "english_description": None, # Placeholder for now
+            "spiritual_message": None # Placeholder for now
         }
 
     def calculate_muhurats(self, date_str, city_name):
