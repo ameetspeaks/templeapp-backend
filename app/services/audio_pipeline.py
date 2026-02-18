@@ -38,6 +38,18 @@ class AudioPipeline:
                 }
             }
             
+            # Check for cookies.txt in current or parent directory
+            cookies_path = "cookies.txt"
+            if not os.path.exists(cookies_path):
+                # Try backend/cookies.txt
+                cookies_path = os.path.join("backend", "cookies.txt")
+            
+            if os.path.exists(cookies_path):
+                logger.info(f"Using cookies from {cookies_path}")
+                ydl_opts['cookiefile'] = cookies_path
+            else:
+                logger.warning("No cookies.txt found. YouTube fetch might fail.")
+            
             try:
                 with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                     # Search and download first result
