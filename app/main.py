@@ -42,12 +42,13 @@ async def startup_event():
     # Note: Server time might be UTC. APScheduler handles timezone if pytz provided.
     # Assuming container runs in UTC, we need to adjust or use timezone arg.
     
-    scheduler.add_job(job_generate_panchang, 'cron', hour=4, minute=30, timezone='Asia/Kolkata', id="panchang_daily")
-    scheduler.add_job(job_generate_blogs, 'cron', hour=6, minute=0, timezone='Asia/Kolkata', id="blog_daily")
-    scheduler.add_job(job_enrich_temples, 'cron', hour=7, minute=0, timezone='Asia/Kolkata', id="temple_enrich")
-    scheduler.add_job(job_generate_muhurat_report, 'cron', day=1, hour=8, minute=0, timezone='Asia/Kolkata', id="muhurat_monthly")
-    scheduler.add_job(job_generate_aarti_lyrics, 'cron', hour=9, minute=0, timezone='Asia/Kolkata', id="aarti_lyrics")
-    scheduler.add_job(job_fetch_aarti_audio, 'cron', hour=10, minute=0, timezone='Asia/Kolkata', id="aarti_audio")
+    # Add jobs but pause immediately to allow manual triggering only
+    scheduler.add_job(job_generate_panchang, 'cron', hour=4, minute=30, timezone='Asia/Kolkata', id="panchang_daily").pause()
+    scheduler.add_job(job_generate_blogs, 'cron', hour=6, minute=0, timezone='Asia/Kolkata', id="blog_daily").pause()
+    scheduler.add_job(job_enrich_temples, 'cron', hour=7, minute=0, timezone='Asia/Kolkata', id="temple_enrich").pause()
+    scheduler.add_job(job_generate_muhurat_report, 'cron', day=1, hour=8, minute=0, timezone='Asia/Kolkata', id="muhurat_monthly").pause()
+    scheduler.add_job(job_generate_aarti_lyrics, 'cron', hour=9, minute=0, timezone='Asia/Kolkata', id="aarti_lyrics").pause()
+    scheduler.add_job(job_fetch_aarti_audio, 'cron', hour=10, minute=0, timezone='Asia/Kolkata', id="aarti_audio").pause()
 
 @app.on_event("shutdown")
 async def shutdown_event():

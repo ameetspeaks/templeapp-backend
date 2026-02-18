@@ -13,6 +13,7 @@ class Settings:
     CLOUDINARY_CLOUD_NAME = os.getenv("CLOUDINARY_CLOUD_NAME")
     CLOUDINARY_API_KEY = os.getenv("CLOUDINARY_API_KEY")
     CLOUDINARY_API_SECRET = os.getenv("CLOUDINARY_API_SECRET")
-    ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "").split(",")
+    # Default to allow all for direct access if env var not set
+    ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "*").split(",")
 
 settings = Settings()
