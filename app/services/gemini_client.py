@@ -18,7 +18,7 @@ class GeminiClient:
             logger.warning("GEMINI_API_KEY not set. GeminiClient will fail.")
         
         # Models configuration (REST API style)
-        self.flash_model = "gemini-1.5-flash"
+        self.flash_model = "gemini-2.0-flash-exp"
         self.pro_model = "gemini-1.5-pro"
         self.base_url = "https://generativelanguage.googleapis.com/v1beta/models"
 
