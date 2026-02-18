@@ -3,6 +3,11 @@ name: Sync Backend to Hugging Face Space
 on:
   push:
     branches: [main]
+<<<<<<< HEAD
+=======
+    paths:
+      - '/**'
+>>>>>>> 4c03053d63b2e616165c70662cb606321dd68725
   workflow_dispatch:
 
 jobs:
