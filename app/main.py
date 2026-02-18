@@ -6,10 +6,8 @@ from app.routers import panchang, blogs, temples, muhurat, aarti, jobs
 from app.services.scheduler_service import start_scheduler, stop_scheduler, scheduler
 from app.utils.response import error_response
 from app.jobs_definitions import (
-    job_generate_panchang, 
     job_generate_blogs, 
     job_enrich_temples,
-    job_generate_muhurat_report,
     job_generate_aarti_lyrics,
     job_fetch_aarti_audio
 )
@@ -43,10 +41,8 @@ async def startup_event():
     # Assuming container runs in UTC, we need to adjust or use timezone arg.
     
     # Add jobs but pause immediately to allow manual triggering only
-    scheduler.add_job(job_generate_panchang, 'cron', hour=4, minute=30, timezone='Asia/Kolkata', id="panchang_daily").pause()
     scheduler.add_job(job_generate_blogs, 'cron', hour=6, minute=0, timezone='Asia/Kolkata', id="blog_daily").pause()
     scheduler.add_job(job_enrich_temples, 'cron', hour=7, minute=0, timezone='Asia/Kolkata', id="temple_enrich").pause()
-    scheduler.add_job(job_generate_muhurat_report, 'cron', day=1, hour=8, minute=0, timezone='Asia/Kolkata', id="muhurat_monthly").pause()
     scheduler.add_job(job_generate_aarti_lyrics, 'cron', hour=9, minute=0, timezone='Asia/Kolkata', id="aarti_lyrics").pause()
     scheduler.add_job(job_fetch_aarti_audio, 'cron', hour=10, minute=0, timezone='Asia/Kolkata', id="aarti_audio").pause()
 

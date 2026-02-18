@@ -1,42 +1,15 @@
 import asyncio
 from datetime import datetime, timedelta
-from app.services.panchang_calculator import PanchangCalculator
 from app.services.gemini_client import GeminiClient
 from app.utils.supabase_client import supabase
 from app.utils.logger import setup_logger
 
 logger = setup_logger("jobs")
-panchang_calc = PanchangCalculator()
 gemini = GeminiClient()
 
 async def job_generate_panchang():
-    logger.info("Starting Panchang Generation Job")
-    city = "Delhi"
-    try:
-        for i in range(7):
-            date = datetime.now() + timedelta(days=i)
-            date_str = date.strftime("%Y-%m-%d")
-            
-            calc = panchang_calc.calculate(date_str, city)
-            prompt = f"""
-            Generate a daily panchang description based on this data: {calc}.
-            Output JSON: hindi_description, english_description, spiritual_message, festivals.
-            """
-            try:
-                ai = await gemini.generate_json(prompt, model="flash")
-                full = {**calc, **ai}
-                
-                res = supabase.table("panchang_daily").select("id").eq("date", date_str).eq("city", city).execute()
-                if res.data:
-                    supabase.table("panchang_daily").update(full).eq("id", res.data[0]['id']).execute()
-                else:
-                    supabase.table("panchang_daily").insert(full).execute()
-            except Exception as e:
-                logger.error(f"Failed for date {date_str}: {e}")
-                
-        logger.info("Panchang Generation Job Completed")
-    except Exception as e:
-        logger.error(f"Panchang Job Failed: {e}")
+    # Deprecated: Replaced by GitHub Actions automation
+    pass
 
 async def job_generate_blogs():
     logger.info("Starting Blog Generation Job")
@@ -90,7 +63,7 @@ async def job_enrich_temples():
     pass
 
 async def job_generate_muhurat_report():
-    logger.info("Starting Muhurat Report Job")
+    # Deprecated: Replaced by GitHub Actions automation
     pass
 
 async def job_generate_aarti_lyrics():
