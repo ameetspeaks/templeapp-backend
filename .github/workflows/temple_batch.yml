@@ -31,4 +31,4 @@ jobs:
         SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
       run: |
         echo "Running batch fetch for temples..."
-        python backend/scripts/fetch_temples.py --batch_mode
+        python scripts/fetch_temples.py --batch_mode
