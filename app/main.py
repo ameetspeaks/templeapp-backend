@@ -64,7 +64,7 @@ def health_check():
         "version": "1.0.0",
         "uptime_seconds": 0, # Placeholder
         "models": {
-            "flash": "gemini-2.0-flash-exp",
+            "flash": "gemini-2.0-flash",
             "pro": "gemini-1.5-pro"
         }
     }
