@@ -74,8 +74,8 @@ def process_element(element, city, state):
     website = tags.get('website') or tags.get('contact:website') or tags.get('url')
     
     # Slug
-    # Slugify name + city for uniqueness
-    slug = slugify(f"{name} {city}")
+    osm_id = element.get('id', 0)
+    slug = slugify(f"{name} {city} {osm_id}")
     
     # Address Construction
     addr_parts = []
@@ -147,7 +147,7 @@ def fetch_pending_city():
     try:
         # Get one pending city
         # Order by random or id to distribute? Let's just take first.
-        res = supabase.table("locations").select("*").eq("status", "pending").limit(1).execute()
+        res = supabase.table("locations").select("*").eq("status", "pending").order("created_at").limit(1).execute()
         if res.data:
             return res.data[0]
         return None
