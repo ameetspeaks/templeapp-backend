@@ -30,6 +30,12 @@ class AudioPipeline:
                 'noplaylist': True,
                 'quiet': True,
                 'max_filesize': 50 * 1024 * 1024, # 50MB
+                'nocheckcertificate': True,
+                'extractor_args': {
+                    'youtube': {
+                        'player_client': ['android', 'ios']
+                    }
+                }
             }
             
             try:
