@@ -186,3 +186,10 @@ class RegisterPushRequest(BaseModel):
     city: Optional[str] = None
     tz: Optional[str] = None
 
+class BlogGenerateRequest(BaseModel):
+    keyword_id: Optional[str] = None
+    category: Optional[str] = None
+
+class BlogBatchRequest(BaseModel):
+    count: int = 1
+
