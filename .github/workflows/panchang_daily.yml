@@ -33,12 +33,13 @@ jobs:
     - name: Install Dependencies
       run: |
         pip install --upgrade pip
-        pip install ephem supabase python-dotenv pytz
+        pip install ephem supabase python-dotenv pytz httpx
 
     - name: Run Panchang Generation Script
       env:
         SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
         SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         # Add other secrets here if your script reads them from env
       run: |
         DAYS=${{ github.event.inputs.days || 10 }}
