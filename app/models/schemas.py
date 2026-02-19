@@ -1,68 +1,64 @@
-from pydantic import BaseModel, Field
-from typing import List, Optional, Dict, Any
+from pydantic import BaseModel, Field, HttpUrl
+from typing import List, Optional, Dict, Any, Union
 from datetime import date, datetime
+from enum import Enum
 
 # --- Shared ---
 class SuccessResponse(BaseModel):
-    success: bool
+    status: str = "ok" # Changed from success: bool to status: "ok"|"error" to match spec
     data: Optional[Any] = None
-    message: str
-    timestamp: datetime
+    error: Optional[Dict[str, Any]] = None
 
-# --- Panchang ---
-class PanchangRequest(BaseModel):
-    date: str = Field(..., description="YYYY-MM-DD")
-    city: str = Field(..., description="City name")
+class ErrorResponse(BaseModel):
+    status: str = "error"
+    error: Dict[str, Any]
 
-class PanchangRangeRequest(BaseModel):
-    start_date: str
-    end_date: str
-    city: str
+class PaginationResponse(BaseModel):
+    page: int
+    page_size: int
+    total: int
+    items: List[Any]
 
-class PanchangData(BaseModel):
-    date: str
-    city: str
-    sunrise: str
-    sunset: str
-    moonrise: str
-    tithi: str
-    paksha: str
-    nakshatra: str
-    yoga: str
-    karan: str
-    rahukaal: str
-    yamaganda: Optional[str] = None
-    gulika: Optional[str] = None
-    hindi_description: Optional[str] = None
-    english_description: Optional[str] = None
-    spiritual_message: Optional[str] = None
-    festivals: Optional[List[str]] = None
-
-# --- Blog ---
-class BlogGenerateRequest(BaseModel):
-    keyword_id: Optional[str] = None
-    category: Optional[str] = None
-
-class BlogBatchRequest(BaseModel):
-    count: int = 5
-
-class BlogResponse(BaseModel):
-    id: str
-    title: str
-    slug: str
-    status: str
-    created_at: str
+# --- Enums ---
+class Deity(str, Enum):
+    GANESH = "Ganesh"
+    SHIVA = "Shiva"
+    VISHNU = "Vishnu"
+    KRISHNA = "Krishna"
+    RAM = "Ram"
+    HANUMAN = "Hanuman"
+    DURGA = "Durga"
+    LAKSHMI = "Lakshmi"
+    SARASWATI = "Saraswati"
+    KALI = "Kali"
+    OTHER = "Other"
 
 # --- Temple ---
-class TempleAddRequest(BaseModel):
+class TimeSlot(BaseModel):
+    label: str
+    start: str # HH:MM
+    end: str # HH:MM
+
+class TempleBase(BaseModel):
     name: str
     deity: str
+    latitude: float
+    longitude: float
+    address: Optional[str] = None
     city: str
     state: str
-    address: Optional[str] = None
     contact: Optional[str] = None
-    latitude: Optional[float] = None
-    longitude: Optional[float] = None
+    description: Optional[str] = None
+    image_urls: Optional[List[str]] = []
+    darshan_times: Optional[List[TimeSlot]] = []
+    puja_times: Optional[List[TimeSlot]] = []
+
+class Temple(TempleBase):
+    id: str
+    status: Optional[str] = None # pending/enriched
+
+class TempleAddRequest(TempleBase):
+    pass
 
 class TempleEnrichRequest(BaseModel):
     temple_id: str
@@ -70,47 +66,123 @@ class TempleEnrichRequest(BaseModel):
 class TempleBulkEnrichRequest(BaseModel):
     limit: int = 10
 
-# --- Muhurat ---
-class MuhuratCalculateRequest(BaseModel):
-    muhurat_type: str
-    month: int
-    year: int
-    city: str
-
-class MuhuratMonthlyReportRequest(BaseModel):
-    month: int
-    year: int
-    city: str
-
-class MuhuratItem(BaseModel):
+# --- Panchang & Calendar ---
+class PanchangData(BaseModel):
     date: str
-    start_time: str
-    end_time: str
-    score: float
-    reasoning: str
+    tithi: str
+    nakshatra: str
+    yoga: str
+    karan: str
+    sunrise: str
+    sunset: str
+    moonrise: Optional[str] = None
+    rahukaal: Optional[str] = None
+    special_festival: Optional[str] = None
 
-# --- Aarti ---
-class AartiGenerateRequest(BaseModel):
+class Festival(BaseModel):
+    id: str
+    name: str
+    start_date: str
+    end_date: Optional[str] = None
+    description: Optional[str] = None
+    icon_url: Optional[str] = None
+
+class Muhurat(BaseModel):
+    id: str
+    type: str # vivah, griha_pravesh, etc.
+    start: str # ISO
+    end: str # ISO
+    city: str
+    description: Optional[str] = None
+
+# --- Aarti & Bhajan ---
+class Lyrics(BaseModel):
+    hi: Optional[str] = None
+    en: Optional[str] = None # transliteration or meaning depending on context, keeping simple map for now
+
+class Aarti(BaseModel):
+    id: str
     title: str
     deity: str
-    aarti_type: str # morning/evening/festival
-    language: str = "Hindi"
+    audio_url: Optional[str] = None
+    duration_sec: Optional[int] = None
+    lyrics: Optional[Lyrics] = None
 
-class AartiBatchGenerateRequest(BaseModel):
-    items: List[AartiGenerateRequest]
+class Bhajan(BaseModel):
+    id: str
+    title: str
+    singer: Optional[str] = None
+    audio_url: Optional[str] = None
+    duration_sec: Optional[int] = None
+    lyrics: Optional[Lyrics] = None
+    category: Optional[str] = None
+    deity: Optional[str] = None
+    image_url: Optional[str] = None
 
-class AartiFetchAudioRequest(BaseModel):
-    aarti_id: str
-    storage_provider: Optional[str] = "SUPABASE" # SUPABASE, CLOUDINARY, EXTERNAL
+# --- Puja Guide ---
+class PujaSamagri(BaseModel):
+    name: str
+    qty: Optional[str] = None
+    is_optional: bool = False
 
-class AartiFetchAudioUrlRequest(BaseModel):
-    source_url: str
-    storage_provider: Optional[str] = "SUPABASE" # SUPABASE, CLOUDINARY, EXTERNAL
+class PujaStep(BaseModel):
+    index: int
+    text: str
+    audio_url: Optional[str] = None
+    image_url: Optional[str] = None
 
-class AartiFetchAudioBatchRequest(BaseModel):
-    limit: int = 5
-    storage_provider: Optional[str] = "SUPABASE"
+class PujaGuide(BaseModel):
+    id: str
+    title: str
+    category: str
+    samagri: List[PujaSamagri]
+    steps: List[PujaStep]
+    image_urls: Optional[List[str]] = None
 
-# --- Job ---
-class JobTriggerRequest(BaseModel):
-    job_name: str
+# --- Home ---
+class HomeSummary(BaseModel):
+    greeting: str
+    panchang: PanchangData
+    featured_festivals: List[Festival]
+    quick_counts: Dict[str, int]
+
+# --- Search ---
+class SearchResult(BaseModel):
+    type: str # temple, aarti, bhajan, puja, festival
+    id: str
+    title: str
+    subtitle: Optional[str] = None
+    image_url: Optional[str] = None
+
+# --- Config ---
+class AppConfig(BaseModel):
+    languages: List[str]
+    features: Dict[str, bool]
+    min_version: str
+
+# --- User & Auth ---
+class UserProfile(BaseModel):
+    id: str
+    name: Optional[str] = None
+    city: Optional[str] = None
+    language: Optional[str] = None
+    favorites: Optional[Dict[str, List[str]]] = None # { "temples": ["id1"], ... }
+
+# --- Request Models for Routers ---
+class SearchRequest(BaseModel):
+    q: str
+    page: int = 1
+    page_size: int = 20
+
+class GeoRequest(BaseModel):
+    lat: float
+    lng: float
+    radius_km: float = 10.0
+
+class RegisterPushRequest(BaseModel):
+    device_id: str
+    token: str
+    platform: str
+    city: Optional[str] = None
+    tz: Optional[str] = None
+
