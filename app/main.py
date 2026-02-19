@@ -2,7 +2,10 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from app.config import settings
-from app.routers import panchang, blogs, temples, muhurat, aarti, jobs
+from app.routers import (
+    panchang, blogs, temples, muhurat, aarti, jobs,
+    home, bhajan, puja, search, notifications, config, auth
+)
 from app.services.scheduler_service import start_scheduler, stop_scheduler, scheduler
 from app.utils.response import error_response
 from app.jobs_definitions import (
@@ -35,14 +38,6 @@ async def global_exception_handler(request: Request, exc: Exception):
 @app.on_event("startup")
 async def startup_event():
     start_scheduler()
-    
-    # Register Jobs (IST times)
-    # Note: Server time might be UTC. APScheduler handles timezone if pytz provided.
-    # Assuming container runs in UTC, we need to adjust or use timezone arg.
-    
-    # Jobs are now handled by GitHub Actions automation.
-    # We keep the scheduler running only for manual trigger endpoints if needed, 
-    # but no jobs are scheduled on startup.
     pass
 
 @app.on_event("shutdown")
@@ -50,12 +45,24 @@ async def shutdown_event():
     stop_scheduler()
 
 # Include Routers
-app.include_router(panchang.router)
-app.include_router(blogs.router)
+# V1 Routers
+app.include_router(home.router)
 app.include_router(temples.router)
-app.include_router(muhurat.router)
 app.include_router(aarti.router)
+app.include_router(bhajan.router)
+app.include_router(panchang.router)
+app.include_router(panchang.festivals_router) # Exported from panchang.py
+app.include_router(muhurat.router)
+app.include_router(puja.router)
+app.include_router(search.router)
+app.include_router(notifications.router)
+app.include_router(config.router)
+app.include_router(auth.router)
+
+# Legacy/Admin Routers (keeping them if needed, or migration needed if paths conflict)
+# Note: routers like 'jobs' and 'blogs' are admin/backend specific, keeping them.
 app.include_router(jobs.router)
+app.include_router(blogs.router)
 
 @app.get("/health")
 def health_check():
@@ -68,3 +75,4 @@ def health_check():
             "pro": "gemini-1.5-pro"
         }
     }
+
