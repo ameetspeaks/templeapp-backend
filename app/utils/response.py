@@ -6,7 +6,7 @@ def success_response(data: Any = None, message: str = "Success") -> JSONResponse
     return JSONResponse(
         status_code=200,
         content={
-            "success": True,
+            "status": "ok",
             "data": data,
             "message": message,
             "timestamp": datetime.now().isoformat()
