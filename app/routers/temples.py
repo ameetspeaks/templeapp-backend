@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from typing import List, Optional
+import math
 from datetime import datetime
 import asyncio
 from app.models.schemas import TempleAddRequest, TempleEnrichRequest, TempleBulkEnrichRequest, SuccessResponse, Temple, PaginationResponse
@@ -55,8 +56,6 @@ async def temples_within_bounds(
 ):
     try:
         query = supabase.table("temples").select("*")
-        # Supabase (PostgREST) doesn't have native box search in simple client without GIS ext active for all columns
-        # But we can use gte/lte filters on lat/lng columns if they are simple floats
         query = query.gte("latitude", sw_lat).lte("latitude", ne_lat)\
                      .gte("longitude", sw_lng).lte("longitude", ne_lng)
         
@@ -68,7 +67,68 @@ async def temples_within_bounds(
     except Exception as e:
         return error_response(str(e), 500)
 
-@router.get("/{id}", response_model=SuccessResponse)
+@router.get("/nearby", response_model=SuccessResponse)
+async def get_nearby_temples(
+    lat: float,
+    lng: float,
+    radius: float = 10.0, # km
+    page: int = 1,
+    page_size: int = 10,
+    api_key: str = Depends(verify_api_key)
+):
+    try:
+        # Bounding box calculation for efficiency
+        # 1 degree of lat ~ 111km
+        lat_delta = radius / 111.0
+        # 1 degree of lng ~ 111km * cos(lat)
+        lng_delta = radius / (111.0 * math.cos(math.radians(lat)))
+        
+        sw_lat, sw_lng = lat - lat_delta, lng - lng_delta
+        ne_lat, ne_lng = lat + lat_delta, lng + lng_delta
+        
+        # Query within bounding box first
+        query = supabase.table("temples").select("*", count="exact")
+        query = query.gte("latitude", sw_lat).lte("latitude", ne_lat)\
+                     .gte("longitude", sw_lng).lte("longitude", ne_lng)
+        
+        res = query.execute()
+        
+        # Calculate real distances and sort
+        temples = []
+        for t in res.data:
+            t_lat = float(t.get('latitude', 0))
+            t_lng = float(t.get('longitude', 0))
+            
+            # Haversine formula
+            R = 6371.0 # Earth radius in km
+            d_lat = math.radians(t_lat - lat)
+            d_lng = math.radians(t_lng - lng)
+            a = math.sin(d_lat / 2)**2 + math.cos(math.radians(lat)) * math.cos(math.radians(t_lat)) * math.sin(d_lng / 2)**2
+            c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+            dist = R * c
+            
+            if dist <= radius:
+                t['distance_km'] = round(dist, 2)
+                temples.append(t)
+        
+        # Sort by distance
+        temples.sort(key=lambda x: x['distance_km'])
+        
+        # Pagination
+        start = (page - 1) * page_size
+        end = start + page_size
+        paginated_items = temples[start:end]
+        
+        return success_response({
+            "items": paginated_items,
+            "page": page,
+            "page_size": page_size,
+            "total": len(temples)
+        })
+    except Exception as e:
+        return error_response(str(e), 500)
+
+@router.get("/{id:uuid}", response_model=SuccessResponse)
 async def get_temple(id: str, api_key: str = Depends(verify_api_key)):
     try:
         res = supabase.table("temples").select("*").eq("id", id).execute()
@@ -78,7 +138,7 @@ async def get_temple(id: str, api_key: str = Depends(verify_api_key)):
     except Exception as e:
         return error_response(str(e), 500)
 
-@router.get("/{id}/gallery", response_model=SuccessResponse)
+@router.get("/{id:uuid}/gallery", response_model=SuccessResponse)
 async def get_temple_gallery(id: str, api_key: str = Depends(verify_api_key)):
     try:
         res = supabase.table("temples").select("image_urls").eq("id", id).execute()
@@ -88,7 +148,7 @@ async def get_temple_gallery(id: str, api_key: str = Depends(verify_api_key)):
     except Exception as e:
         return error_response(str(e), 500)
 
-@router.get("/{id}/timings", response_model=SuccessResponse)
+@router.get("/{id:uuid}/timings", response_model=SuccessResponse)
 async def get_temple_timings(id: str, api_key: str = Depends(verify_api_key)):
     try:
         res = supabase.table("temples").select("darshan_times, puja_times").eq("id", id).execute()
