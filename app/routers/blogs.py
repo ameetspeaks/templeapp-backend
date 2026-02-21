@@ -7,6 +7,18 @@ from app.services.gemini_client import GeminiClient
 from app.utils.supabase_client import supabase
 from app.utils.response import success_response, error_response
 from app.utils.auth import verify_api_key
+from pydantic import BaseModel
+from typing import Any
+
+class BlogUpdateRequest(BaseModel):
+    title: Optional[str] = None
+    slug: Optional[str] = None
+    meta_description: Optional[str] = None
+    content_html: Optional[str] = None
+    faqs: Optional[Any] = None
+    tags: Optional[Any] = None
+    category: Optional[str] = None
+    status: Optional[str] = None
 
 router = APIRouter(prefix="/blog", tags=["Blogs"])
 gemini = GeminiClient()
@@ -163,5 +175,32 @@ async def delete_blog(id: str, api_key: str = Depends(verify_api_key)):
     try:
         supabase.table("blogs").delete().eq("id", id).execute()
         return success_response(None, "Deleted")
+    except Exception as e:
+        return error_response(str(e), 500)
+
+@router.put("/{id}", response_model=SuccessResponse)
+async def update_blog(id: str, body: BlogUpdateRequest, api_key: str = Depends(verify_api_key)):
+    try:
+        data = body.model_dump(exclude_none=True)
+        if not data:
+            return error_response("No fields to update", 400)
+        if "status" in data and data["status"] == "published":
+            data["published_at"] = datetime.now().isoformat()
+        res = supabase.table("blogs").update(data).eq("id", id).execute()
+        if not res.data:
+            return error_response("Blog not found", 404)
+        return success_response(res.data[0], "Blog updated")
+    except Exception as e:
+        return error_response(str(e), 500)
+
+@router.post("/create", response_model=SuccessResponse)
+async def create_blog_manual(body: BlogUpdateRequest, api_key: str = Depends(verify_api_key)):
+    try:
+        data = body.model_dump(exclude_none=True)
+        data.setdefault("status", "draft")
+        data.setdefault("ai_generated", False)
+        data["created_at"] = datetime.now().isoformat()
+        res = supabase.table("blogs").insert(data).execute()
+        return success_response(res.data[0] if res.data else data, "Blog created")
     except Exception as e:
         return error_response(str(e), 500)

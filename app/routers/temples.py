@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
-from typing import List, Optional
+from typing import List, Optional, Any
 import math
 from datetime import datetime
 import asyncio
@@ -8,6 +8,35 @@ from app.services.gemini_client import GeminiClient
 from app.utils.supabase_client import supabase
 from app.utils.response import success_response, error_response
 from app.utils.auth import verify_api_key
+from pydantic import BaseModel
+
+class TempleCreateRequest(BaseModel):
+    name: str
+    slug: str
+    city: str
+    state: str
+    deity: str
+    type: str
+    address: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    cover_url: Optional[str] = None
+    description: Optional[str] = None
+    timings: Optional[str] = None
+
+class TempleUpdateRequest(BaseModel):
+    name: Optional[str] = None
+    slug: Optional[str] = None
+    city: Optional[str] = None
+    state: Optional[str] = None
+    deity: Optional[str] = None
+    type: Optional[str] = None
+    address: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    cover_url: Optional[str] = None
+    description: Optional[str] = None
+    timings: Optional[str] = None
 
 router = APIRouter(prefix="/v1/temples", tags=["Temples V1"])
 gemini = GeminiClient()
@@ -215,3 +244,35 @@ async def enrich_temple(temple_id: str, api_key: str = Depends(verify_api_key)):
     except Exception as e:
         return error_response(str(e), 500)
 
+# --- Admin CRUD ---
+
+
+@router.post("", response_model=SuccessResponse)
+async def create_temple(body: TempleCreateRequest, api_key: str = Depends(verify_api_key)):
+    try:
+        data = body.model_dump(exclude_none=True)
+        res = supabase.table("temples").insert(data).execute()
+        return success_response(res.data[0] if res.data else data, "Temple created")
+    except Exception as e:
+        return error_response(str(e), 500)
+
+@router.put("/{id}", response_model=SuccessResponse)
+async def update_temple(id: str, body: TempleUpdateRequest, api_key: str = Depends(verify_api_key)):
+    try:
+        data = body.model_dump(exclude_none=True)
+        if not data:
+            return error_response("No fields to update", 400)
+        res = supabase.table("temples").update(data).eq("id", id).execute()
+        if not res.data:
+            return error_response("Not found", 404)
+        return success_response(res.data[0], "Temple updated")
+    except Exception as e:
+        return error_response(str(e), 500)
+
+@router.delete("/{id}", response_model=SuccessResponse)
+async def delete_temple(id: str, api_key: str = Depends(verify_api_key)):
+    try:
+        supabase.table("temples").delete().eq("id", id).execute()
+        return success_response(None, "Temple deleted")
+    except Exception as e:
+        return error_response(str(e), 500)

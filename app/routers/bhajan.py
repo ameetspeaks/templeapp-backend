@@ -4,6 +4,29 @@ from app.models.schemas import SuccessResponse, Bhajan, PaginationResponse
 from app.utils.supabase_client import supabase
 from app.utils.response import success_response, error_response
 from app.utils.auth import verify_api_key
+from pydantic import BaseModel
+
+class BhajanCreateRequest(BaseModel):
+    title: str
+    deity: Optional[str] = None
+    singer: Optional[str] = None
+    category: Optional[str] = None
+    audio_url: Optional[str] = None
+    duration_seconds: Optional[int] = None
+    image_url: Optional[str] = None
+    lyrics_hindi: Optional[str] = None
+    lyrics_english: Optional[str] = None
+
+class BhajanUpdateRequest(BaseModel):
+    title: Optional[str] = None
+    deity: Optional[str] = None
+    singer: Optional[str] = None
+    category: Optional[str] = None
+    audio_url: Optional[str] = None
+    duration_seconds: Optional[int] = None
+    image_url: Optional[str] = None
+    lyrics_hindi: Optional[str] = None
+    lyrics_english: Optional[str] = None
 
 router = APIRouter(prefix="/v1/bhajans", tags=["Bhajan V1"])
 
@@ -86,5 +109,38 @@ async def get_bhajan(id: str, api_key: str = Depends(verify_api_key)):
             "image_url": item.get("image_url"),
             "lyrics": lyrics
         })
+    except Exception as e:
+        return error_response(str(e), 500)
+
+
+# --- Admin CRUD ---
+
+@router.post("", response_model=SuccessResponse)
+async def create_bhajan(body: BhajanCreateRequest, api_key: str = Depends(verify_api_key)):
+    try:
+        data = body.model_dump(exclude_none=True)
+        res = supabase.table("bhajans").insert(data).execute()
+        return success_response(res.data[0] if res.data else data, "Bhajan created")
+    except Exception as e:
+        return error_response(str(e), 500)
+
+@router.put("/{id}", response_model=SuccessResponse)
+async def update_bhajan(id: str, body: BhajanUpdateRequest, api_key: str = Depends(verify_api_key)):
+    try:
+        data = body.model_dump(exclude_none=True)
+        if not data:
+            return error_response("No fields to update", 400)
+        res = supabase.table("bhajans").update(data).eq("id", id).execute()
+        if not res.data:
+            return error_response("Not found", 404)
+        return success_response(res.data[0], "Bhajan updated")
+    except Exception as e:
+        return error_response(str(e), 500)
+
+@router.delete("/{id}", response_model=SuccessResponse)
+async def delete_bhajan(id: str, api_key: str = Depends(verify_api_key)):
+    try:
+        supabase.table("bhajans").delete().eq("id", id).execute()
+        return success_response(None, "Bhajan deleted")
     except Exception as e:
         return error_response(str(e), 500)

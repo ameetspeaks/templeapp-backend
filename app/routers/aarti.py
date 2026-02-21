@@ -5,6 +5,29 @@ from app.services.gemini_client import GeminiClient
 from app.utils.supabase_client import supabase
 from app.utils.response import success_response, error_response
 from app.utils.auth import verify_api_key
+from pydantic import BaseModel
+
+class AartiCreateRequest(BaseModel):
+    title: str
+    deity: str
+    audio_url: Optional[str] = None
+    duration_seconds: Optional[int] = None
+    lyrics_hindi: Optional[str] = None
+    lyrics_english_transliteration: Optional[str] = None
+    lyrics_english_meaning: Optional[str] = None
+    significance: Optional[str] = None
+    best_time: Optional[str] = None
+
+class AartiUpdateRequest(BaseModel):
+    title: Optional[str] = None
+    deity: Optional[str] = None
+    audio_url: Optional[str] = None
+    duration_seconds: Optional[int] = None
+    lyrics_hindi: Optional[str] = None
+    lyrics_english_transliteration: Optional[str] = None
+    lyrics_english_meaning: Optional[str] = None
+    significance: Optional[str] = None
+    best_time: Optional[str] = None
 
 router = APIRouter(prefix="/v1/aartis", tags=["Aarti V1"])
 gemini = GeminiClient()
@@ -96,3 +119,35 @@ async def get_aarti_lyrics(id: str, lang: str = "hi", api_key: str = Depends(ver
     except Exception as e:
         return error_response(str(e), 500)
 
+
+# --- Admin CRUD ---
+
+@router.post("", response_model=SuccessResponse)
+async def create_aarti(body: AartiCreateRequest, api_key: str = Depends(verify_api_key)):
+    try:
+        data = body.model_dump(exclude_none=True)
+        res = supabase.table("aartis").insert(data).execute()
+        return success_response(res.data[0] if res.data else data, "Aarti created")
+    except Exception as e:
+        return error_response(str(e), 500)
+
+@router.put("/{id}", response_model=SuccessResponse)
+async def update_aarti(id: str, body: AartiUpdateRequest, api_key: str = Depends(verify_api_key)):
+    try:
+        data = body.model_dump(exclude_none=True)
+        if not data:
+            return error_response("No fields to update", 400)
+        res = supabase.table("aartis").update(data).eq("id", id).execute()
+        if not res.data:
+            return error_response("Not found", 404)
+        return success_response(res.data[0], "Aarti updated")
+    except Exception as e:
+        return error_response(str(e), 500)
+
+@router.delete("/{id}", response_model=SuccessResponse)
+async def delete_aarti(id: str, api_key: str = Depends(verify_api_key)):
+    try:
+        supabase.table("aartis").delete().eq("id", id).execute()
+        return success_response(None, "Aarti deleted")
+    except Exception as e:
+        return error_response(str(e), 500)
