@@ -158,6 +158,31 @@ async def get_temple_timings(id: str, api_key: str = Depends(verify_api_key)):
     except Exception as e:
         return error_response(str(e), 500)
 
+@router.post("/{id:uuid}/favorite", response_model=SuccessResponse)
+async def toggle_favorite(id: str, api_key: str = Depends(verify_api_key)):
+    try:
+        # In real app, get user_id from token
+        user_id = "user_123" 
+        
+        # Check if already favorite
+        res = supabase.table("user_profiles").select("favorites").eq("id", user_id).execute()
+        favorites = res.data[0].get("favorites", {}) if res.data and res.data[0].get("favorites") else {}
+        temple_favs = favorites.get("temples", [])
+        
+        if id in temple_favs:
+            temple_favs.remove(id)
+            msg = "Removed from favorites"
+        else:
+            temple_favs.append(id)
+            msg = "Added to favorites"
+            
+        favorites["temples"] = temple_favs
+        supabase.table("user_profiles").update({"favorites": favorites}).eq("id", user_id).execute()
+        
+        return success_response({"is_favorite": id in temple_favs}, msg)
+    except Exception as e:
+        return error_response(str(e), 500)
+
 # --- Enrichment Endpoints (Internal/Admin) ---
 @router.post("/enrich/{temple_id}", response_model=SuccessResponse)
 async def enrich_temple(temple_id: str, api_key: str = Depends(verify_api_key)):
