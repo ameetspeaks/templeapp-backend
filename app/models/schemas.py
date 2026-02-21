@@ -209,3 +209,72 @@ class BlogGenerateRequest(BaseModel):
 class BlogBatchRequest(BaseModel):
     count: int = 1
 
+
+# --- Gyan (Daily Spiritual Wisdom) ---
+class DailyGyanEntry(BaseModel):
+    id: Optional[str] = None
+    date: str
+    chapter_number: int
+    verse_number: int
+    sanskrit_text: str
+    transliteration: Optional[str] = None
+    hindi_translation: str
+    english_translation: str
+    hindi_meaning: Optional[str] = None
+    english_meaning: Optional[str] = None
+    daily_message: Optional[str] = None
+    daily_message_hindi: Optional[str] = None
+    practice_for_today: Optional[str] = None
+    practice_for_today_hindi: Optional[str] = None
+    source: Optional[str] = "Bhagavad Gita"
+    tags: Optional[List[str]] = []
+
+class BookmarkRequest(BaseModel):
+    shloka_id: str
+
+class BookmarkResponse(BaseModel):
+    shloka_id: str
+    user_id: str
+    created_at: Optional[str] = None
+
+# --- Geeta (Bhagavad Gita) ---
+class WordMeaningSchema(BaseModel):
+    sanskrit: str
+    transliteration: Optional[str] = None
+    hindi: str
+    english: str
+
+class GeetaShlokaSchema(BaseModel):
+    id: str                          # e.g. "2.47"
+    chapter_number: int
+    verse_number: int
+    sanskrit_text: str
+    transliteration: Optional[str] = None
+    hindi_translation: str
+    english_translation: str
+    hindi_meaning: Optional[str] = None
+    english_meaning: Optional[str] = None
+    word_by_word: Optional[List[WordMeaningSchema]] = []
+    audio_url: Optional[str] = None
+    tags: Optional[List[str]] = []
+
+class GeetaChapterSchema(BaseModel):
+    chapter_number: int
+    title: str
+    title_hindi: str
+    title_sanskrit: str
+    verse_count: int
+    summary: Optional[str] = None
+    summary_hindi: Optional[str] = None
+    theme: Optional[str] = None
+    key_takeaway: Optional[str] = None
+
+class ReadingProgress(BaseModel):
+    user_id: str
+    last_chapter: int = 1
+    last_verse: int = 1
+    updated_at: Optional[str] = None
+
+class SaveProgressRequest(BaseModel):
+    chapter: int
+    verse: int

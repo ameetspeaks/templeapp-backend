@@ -4,7 +4,8 @@ from fastapi.responses import JSONResponse
 from app.config import settings
 from app.routers import (
     panchang, blogs, temples, muhurat, aarti, jobs,
-    home, bhajan, puja, search, notifications, config, auth
+    home, bhajan, puja, search, notifications, config, auth,
+    gyan, geeta
 )
 from app.services.scheduler_service import start_scheduler, stop_scheduler, scheduler
 from app.utils.response import error_response
@@ -58,6 +59,8 @@ app.include_router(search.router)
 app.include_router(notifications.router)
 app.include_router(config.router)
 app.include_router(auth.router)
+app.include_router(gyan.router)
+app.include_router(geeta.router)
 
 # Legacy/Admin Routers (keeping them if needed, or migration needed if paths conflict)
 # Note: routers like 'jobs' and 'blogs' are admin/backend specific, keeping them.
