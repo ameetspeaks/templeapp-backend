@@ -33,13 +33,15 @@ async def enrich_with_ai(date_str, city, panchang_basic):
         "festivals": [
             {{
                 "name": "Festival Name",
+                "name_hindi": "त्योहार का नाम",
                 "description": "Short description",
                 "type": "Major" | "Minor" | "Jayanti" | "Vrat"
             }}
         ],
         "hindi_description": "2-3 lines in Hindi",
         "english_description": "2-3 lines in English",
-        "spiritual_message": "One liner quote"
+        "spiritual_message": "One liner quote in English",
+        "spiritual_message_hindi": "हिंदी में आध्यात्मिक संदेश"
     }}
     If no festival, "festivals" should be empty list [].
     """
@@ -81,6 +83,7 @@ async def generate_daily_data(start_date_str=None, end_date_str=None, days=10, c
                 full_data["hindi_description"] = ai_data.get("hindi_description")
                 full_data["english_description"] = ai_data.get("english_description")
                 full_data["spiritual_message"] = ai_data.get("spiritual_message")
+                full_data["spiritual_message_hindi"] = ai_data.get("spiritual_message_hindi")
                 
                 # Update festivals list in panchang table
                 ai_festivals = ai_data.get("festivals", [])
@@ -94,13 +97,24 @@ async def generate_daily_data(start_date_str=None, end_date_str=None, days=10, c
                 full_data["festivals"] = festival_names # Update the list column
                 
                 # If AI found a festival and we didn't have one, set the main 'festival' field to the first one
-                if not full_data.get("festival") and festival_names:
-                    full_data["festival"] = festival_names[0]
+                if festival_names:
+                    if not full_data.get("festival"):
+                        full_data["festival"] = festival_names[0]
+                    # Attempt to set festival_hindi if matched
+                    for f in ai_festivals:
+                        if f["name"] == full_data["festival"]:
+                            full_data["festival_hindi"] = f.get("name_hindi")
+                            break
+                    # Also map vrat_hindi if any
+                    vrat_name = full_data.get("vrat")
+                    if vrat_name:
+                        for f in ai_festivals:
+                            if f["name"] == vrat_name:
+                                full_data["vrat_hindi"] = f.get("name_hindi")
+                                break
 
-            # Prepare data for DB (remove internal fields like tithi_index)
+            # Prepare data for DB
             db_payload = full_data.copy()
-            if 'tithi_index' in db_payload:
-                del db_payload['tithi_index']
 
             # Upsert Panchang
             # Check existing
@@ -123,6 +137,7 @@ async def generate_daily_data(start_date_str=None, end_date_str=None, days=10, c
                     if not f_res.data:
                         f_payload = {
                             "name": fest["name"],
+                            "name_hindi": fest.get("name_hindi"),
                             "start_date": date_str,
                             "end_date": date_str,
                             "description": fest.get("description"),

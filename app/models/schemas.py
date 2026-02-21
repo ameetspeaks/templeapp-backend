@@ -70,14 +70,30 @@ class TempleBulkEnrichRequest(BaseModel):
 class PanchangData(BaseModel):
     date: str
     tithi: str
+    tithi_hindi: Optional[str] = None
+    tithi_index: Optional[int] = None
+    paksha: Optional[str] = None
     nakshatra: str
+    nakshatra_hindi: Optional[str] = None
     yoga: str
+    yoga_hindi: Optional[str] = None
     karan: str
+    karan_hindi: Optional[str] = None
     sunrise: str
     sunset: str
     moonrise: Optional[str] = None
+    moonset: Optional[str] = None
+    day_duration: Optional[str] = None
     rahukaal: Optional[str] = None
-    special_festival: Optional[str] = None
+    yamaganda: Optional[str] = None
+    gulika: Optional[str] = None
+    festival: Optional[str] = None
+    vrat: Optional[str] = None
+    hindi_description: Optional[str] = None
+    english_description: Optional[str] = None
+    spiritual_message: Optional[str] = None
+    special_festival: Optional[str] = None # Legacy/Duplicate if needed
+
 
 class Festival(BaseModel):
     id: str

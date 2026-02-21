@@ -35,6 +35,36 @@ YOGA_NAMES = [
     "Shukla", "Brahma", "Indra", "Vaidhriti"
 ]
 
+# Hindi Names
+TITHI_NAMES_HI = [
+    "प्रतिपदा", "द्वितीया", "तृतीया", "चतुर्थी", "पंचमी",
+    "षष्ठी", "सप्तमी", "अष्टमी", "नवमी", "दशमी",
+    "एकादशी", "द्वादशी", "त्रयोदशी", "चतुर्दशी", "पूर्णिमा",
+    "प्रतिपदा", "द्वितीया", "तृतीया", "चतुर्थी", "पंचमी",
+    "षष्ठी", "सप्तमी", "अष्टमी", "नवमी", "दशमी",
+    "एकादशी", "द्वादशी", "त्रयोदशी", "चतुर्दशी", "अमावस्या"
+]
+
+NAKSHATRA_NAMES_HI = [
+    "अश्विनी", "भरणी", "कृत्तिका", "रोहिणी", "मृगशिरा", "आर्द्रा",
+    "पुनर्वसु", "पुष्य", "अश्लेषा", "मघा", "पूर्वा फाल्गुनी",
+    "उत्तरा फाल्गुनी", "हस्त", "चित्रा", "स्वाती", "विशाखा", "अनुराधा",
+    "ज्येष्ठा", "मूल", "पूर्वाषाढ़ा", "उत्तराषाढ़ा", "श्रवण",
+    "धनिष्ठा", "शतभिषा", "पूर्वाभाद्रपद", "उत्तराभाद्रपद", "रेवती"
+]
+
+YOGA_NAMES_HI = [
+    "विष्कम्भ", "प्रीति", "आयुष्मान", "सौभाग्य", "शोभन",
+    "अतिगण्ड", "सुकर्मा", "धृति", "शूल", "गण्ड", "वृद्धि",
+    "ध्रुव", "व्याघात", "हर्षण", "वज्र", "सिद्धि", "व्यतिपात",
+    "वरीयान", "परिघ", "शिव", "सिद्ध", "साध्य", "शुभ",
+    "शुक्ल", "ब्रह्म", "इन्द्र", "वैधृति"
+]
+
+KARAN_CYCLE_HI = ["बव", "बालव", "कौलव", "तैतिल", "गर", "वणिज", "विष्टि"]
+KARAN_FIXED_HI = {1: "किस्तुघ्न", 58: "शकुनि", 59: "चतुष्पद", 60: "नाग"}
+
+
 # City Data (In a real app, this should come from DB or comprehensive list)
 CITIES_DB = {
     "Delhi": {"lat": "28.6139", "lon": "77.2090"},
@@ -101,6 +131,7 @@ class PanchangEngine:
             sunrise_utc = obs.next_rising(sun).datetime()
             sunset_utc = obs.next_setting(sun).datetime()
             moonrise_utc = obs.next_rising(moon).datetime()
+            moonset_utc = obs.next_setting(moon).datetime()
         except ephem.AlwaysUpError:
              # Polar regions or weird edge case
              sunrise_utc = None
@@ -121,6 +152,7 @@ class PanchangEngine:
             "sunrise_utc": sunrise_utc,
             "sunset_utc": sunset_utc,
             "moonrise_utc": moonrise_utc,
+            "moonset_utc": moonset_utc,
             "day_duration_mins": day_duration_mins
         }
 
@@ -196,15 +228,26 @@ class PanchangEngine:
         # Then Shakuni, Chatushpada, Naga, Kimstughna
         # Simplified Karan name map for now:
         karan_num = karan_idx_calc + 1
-        if karan_num == 1: karan_name = "Kimstughna"
+        if karan_num == 1: 
+             karan_name = "Kimstughna"
+             karan_name_hi = "किस्तुघ्न"
         elif karan_num > 57:
-             if karan_num == 58: karan_name = "Shakuni"
-             elif karan_num == 59: karan_name = "Chatushpada"
-             elif karan_num == 60: karan_name = "Naga"
-             else: karan_name = "Kimstughna" # Should not happen usually
+             if karan_num == 58: 
+                  karan_name = "Shakuni"
+                  karan_name_hi = "शकुनि"
+             elif karan_num == 59: 
+                  karan_name = "Chatushpada"
+                  karan_name_hi = "चतुष्पद"
+             elif karan_num == 60: 
+                  karan_name = "Naga"
+                  karan_name_hi = "नाग"
+             else: 
+                  karan_name = "Kimstughna"
+                  karan_name_hi = "किस्तुघ्न"
         else:
              karan_cycle = ["Bava", "Balava", "Kaulava", "Taitila", "Gara", "Vanija", "Vishti"]
              karan_name = karan_cycle[(karan_num - 2) % 7]
+             karan_name_hi = KARAN_CYCLE_HI[(karan_num - 2) % 7]
 
         # Rahu Kaal, Yamaganda, Gulika (Fixed slots based on Weekday)
         # A nicer implementation divides day/night into 8 parts (ashta bhagas)
@@ -299,12 +342,18 @@ class PanchangEngine:
             "sunrise": self._to_ist_display(props["sunrise_utc"]),
             "sunset": self._to_ist_display(props["sunset_utc"]),
             "moonrise": self._to_ist_display(props["moonrise_utc"]),
+            "moonset": self._to_ist_display(props["moonset_utc"]),
+            "day_duration": f"{int(props['day_duration_mins'] // 60)}h {int(props['day_duration_mins'] % 60)}m",
             "tithi": tithi_name,
+            "tithi_hindi": TITHI_NAMES_HI[tithi_idx % 30],
             "tithi_index": tithi_idx % 30, # Useful for filtering logic
             "paksha": paksha,
             "nakshatra": nakshatra_name,
+            "nakshatra_hindi": NAKSHATRA_NAMES_HI[nak_idx % 27],
             "yoga": yoga_name,
+            "yoga_hindi": YOGA_NAMES_HI[yoga_idx % 27],
             "karan": karan_name,
+            "karan_hindi": karan_name_hi,
             "rahukaal": rahukaal,
             "yamaganda": yamaganda,
             "gulika": gulika,
