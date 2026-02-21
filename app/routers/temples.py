@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
-from typing import List, Optional, Any
+from typing import List, Optional
 import math
 from datetime import datetime
 import asyncio
@@ -8,35 +8,6 @@ from app.services.gemini_client import GeminiClient
 from app.utils.supabase_client import supabase
 from app.utils.response import success_response, error_response
 from app.utils.auth import verify_api_key
-from pydantic import BaseModel
-
-class TempleCreateRequest(BaseModel):
-    name: str
-    slug: str
-    city: str
-    state: str
-    deity: str
-    type: str
-    address: Optional[str] = None
-    latitude: Optional[float] = None
-    longitude: Optional[float] = None
-    cover_url: Optional[str] = None
-    description: Optional[str] = None
-    timings: Optional[str] = None
-
-class TempleUpdateRequest(BaseModel):
-    name: Optional[str] = None
-    slug: Optional[str] = None
-    city: Optional[str] = None
-    state: Optional[str] = None
-    deity: Optional[str] = None
-    type: Optional[str] = None
-    address: Optional[str] = None
-    latitude: Optional[float] = None
-    longitude: Optional[float] = None
-    cover_url: Optional[str] = None
-    description: Optional[str] = None
-    timings: Optional[str] = None
 
 router = APIRouter(prefix="/v1/temples", tags=["Temples V1"])
 gemini = GeminiClient()
@@ -244,28 +215,21 @@ async def enrich_temple(temple_id: str, api_key: str = Depends(verify_api_key)):
     except Exception as e:
         return error_response(str(e), 500)
 
-# --- Admin CRUD ---
-
-
 @router.post("", response_model=SuccessResponse)
-async def create_temple(body: TempleCreateRequest, api_key: str = Depends(verify_api_key)):
+async def add_temple(temple: TempleAddRequest, api_key: str = Depends(verify_api_key)):
     try:
-        data = body.model_dump(exclude_none=True)
+        data = temple.dict(exclude_unset=True)
         res = supabase.table("temples").insert(data).execute()
-        return success_response(res.data[0] if res.data else data, "Temple created")
+        return success_response(res.data[0] if res.data else data)
     except Exception as e:
         return error_response(str(e), 500)
 
 @router.put("/{id}", response_model=SuccessResponse)
-async def update_temple(id: str, body: TempleUpdateRequest, api_key: str = Depends(verify_api_key)):
+async def update_temple(id: str, temple: TempleAddRequest, api_key: str = Depends(verify_api_key)):
     try:
-        data = body.model_dump(exclude_none=True)
-        if not data:
-            return error_response("No fields to update", 400)
+        data = temple.dict(exclude_unset=True)
         res = supabase.table("temples").update(data).eq("id", id).execute()
-        if not res.data:
-            return error_response("Not found", 404)
-        return success_response(res.data[0], "Temple updated")
+        return success_response(res.data[0] if res.data else data)
     except Exception as e:
         return error_response(str(e), 500)
 
@@ -273,6 +237,29 @@ async def update_temple(id: str, body: TempleUpdateRequest, api_key: str = Depen
 async def delete_temple(id: str, api_key: str = Depends(verify_api_key)):
     try:
         supabase.table("temples").delete().eq("id", id).execute()
-        return success_response(None, "Temple deleted")
+        return success_response(None, "Deleted")
     except Exception as e:
         return error_response(str(e), 500)
+
+@router.post("/bulk-enrich", response_model=SuccessResponse)
+async def bulk_enrich_temples(request: TempleBulkEnrichRequest, api_key: str = Depends(verify_api_key)):
+    try:
+        # Fetch pending
+        res = supabase.table("temples").select("id").eq("status", "pending").limit(request.limit).execute()
+        if not res.data:
+            return success_response({"processed": 0}, "No pending temples found")
+            
+        ids = [t['id'] for t in res.data]
+        processed = 0
+        for tid in ids:
+            try:
+                await enrich_temple(tid, api_key)
+                processed += 1
+                await asyncio.sleep(1) 
+            except Exception as e:
+                print(f"Error enriching {tid}: {e}")
+                
+        return success_response({"processed": processed}, f"Bulk enrichment completed for {processed} temples")
+    except Exception as e:
+        return error_response(str(e), 500)
+

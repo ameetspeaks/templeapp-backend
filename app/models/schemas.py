@@ -42,8 +42,8 @@ class TimeSlot(BaseModel):
 class TempleBase(BaseModel):
     name: str
     deity: str
-    latitude: float
-    longitude: float
+    latitude: Optional[float] = 0.0
+    longitude: Optional[float] = 0.0
     address: Optional[str] = None
     city: str
     state: str
