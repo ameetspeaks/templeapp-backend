@@ -128,7 +128,7 @@ async def get_nearby_temples(
     except Exception as e:
         return error_response(str(e), 500)
 
-@router.get("/{id:uuid}", response_model=SuccessResponse)
+@router.get("/{id}", response_model=SuccessResponse)
 async def get_temple(id: str, api_key: str = Depends(verify_api_key)):
     try:
         res = supabase.table("temples").select("*").eq("id", id).execute()
@@ -138,7 +138,7 @@ async def get_temple(id: str, api_key: str = Depends(verify_api_key)):
     except Exception as e:
         return error_response(str(e), 500)
 
-@router.get("/{id:uuid}/gallery", response_model=SuccessResponse)
+@router.get("/{id}/gallery", response_model=SuccessResponse)
 async def get_temple_gallery(id: str, api_key: str = Depends(verify_api_key)):
     try:
         res = supabase.table("temples").select("image_urls").eq("id", id).execute()
@@ -148,7 +148,7 @@ async def get_temple_gallery(id: str, api_key: str = Depends(verify_api_key)):
     except Exception as e:
         return error_response(str(e), 500)
 
-@router.get("/{id:uuid}/timings", response_model=SuccessResponse)
+@router.get("/{id}/timings", response_model=SuccessResponse)
 async def get_temple_timings(id: str, api_key: str = Depends(verify_api_key)):
     try:
         res = supabase.table("temples").select("darshan_times, puja_times").eq("id", id).execute()
@@ -158,7 +158,7 @@ async def get_temple_timings(id: str, api_key: str = Depends(verify_api_key)):
     except Exception as e:
         return error_response(str(e), 500)
 
-@router.post("/{id:uuid}/favorite", response_model=SuccessResponse)
+@router.post("/{id}/favorite", response_model=SuccessResponse)
 async def toggle_favorite(id: str, api_key: str = Depends(verify_api_key)):
     try:
         # In real app, get user_id from token
