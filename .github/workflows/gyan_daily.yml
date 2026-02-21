@@ -1,0 +1,51 @@
+name: Daily Gyan Automation
+
+on:
+  schedule:
+    # Runs at 19:00 UTC every day = 00:30 IST (just after midnight)
+    - cron: '0 19 * * *'
+  workflow_dispatch:
+    inputs:
+      days:
+        description: 'Number of days to generate'
+        required: true
+        default: '7'
+      start_date:
+        description: 'Start date (YYYY-MM-DD, optional)'
+        required: false
+        default: ''
+
+jobs:
+  generate-gyan:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+
+    - name: Install Dependencies
+      run: |
+        pip install --upgrade pip
+        pip install supabase python-dotenv httpx
+
+    - name: Generate Daily Gyan
+      env:
+        SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+        SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      run: |
+        DAYS="${{ github.event.inputs.days || '7' }}"
+        START="${{ github.event.inputs.start_date }}"
+        if [ -n "$START" ]; then
+          echo "Generating $DAYS days from $START..."
+          python scripts/generate_gyan.py --start_date "$START" --days "$DAYS"
+        else
+          echo "Generating $DAYS days from today..."
+          python scripts/generate_gyan.py --days "$DAYS"
+        fi
