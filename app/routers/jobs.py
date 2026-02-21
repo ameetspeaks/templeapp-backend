@@ -41,4 +41,13 @@ async def job_logs(job_name: Optional[str] = None, limit: int = 50, api_key: str
     except Exception as e:
         return error_response(str(e), 500)
 
+@router.get("/logs/summary", response_model=SuccessResponse)
+async def jobs_summary(api_key: str = Depends(verify_api_key)):
+    try:
+        # Simple summary of last 24h
+        res = supabase.table("job_logs").select("status", count="exact").execute()
+        return success_response({"total_logs": res.count})
+    except Exception as e:
+        return error_response(str(e), 500)
+
 

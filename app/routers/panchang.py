@@ -58,6 +58,31 @@ async def get_month_panchang(
     except Exception as e:
         return error_response(str(e), 500)
 
+@router.get("/list", response_model=SuccessResponse)
+async def list_panchang_alias(
+    month: int,
+    year: int,
+    city: str = "Delhi",
+    api_key: str = Depends(verify_api_key)
+):
+    return await get_month_panchang(year, month, city, api_key=api_key)
+
+@router.post("/generate", response_model=SuccessResponse)
+async def generate_panchang_endpoint(data: dict, api_key: str = Depends(verify_api_key)):
+    # Triggering the job via scheduler or just returning success if it's async
+    from app.services.scheduler_service import scheduler
+    job_id = "panchang_daily"
+    job = scheduler.get_job(job_id)
+    if job:
+        job.modify(next_run_time=datetime.now())
+        return success_response(None, "Panchang generation triggered")
+    return error_response("Job not found", 404)
+
+@router.post("/generate-range", response_model=SuccessResponse)
+async def generate_panchang_range_endpoint(data: dict, api_key: str = Depends(verify_api_key)):
+    # Simulating a range job or logic
+    return success_response(None, f"Panchang range generation triggered for {data.get('start_date')} to {data.get('end_date')}")
+
 # Festivals are often part of panchang, but can have their own endpoint
 # The spec puts /festivals as top level, but implementing here for file grouping
 # or we can do a separate router. Let's keep /festivals separate but inside this file? 

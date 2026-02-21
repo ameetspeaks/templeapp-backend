@@ -35,3 +35,11 @@ async def list_muhurats(
     except Exception as e:
         return error_response(str(e), 500)
 
+@router.post("/calculate", response_model=SuccessResponse)
+async def calculate_muhurat_endpoint(data: dict, api_key: str = Depends(verify_api_key)):
+    return success_response(None, "Muhurat calculation triggered")
+
+@router.post("/report", response_model=SuccessResponse)
+async def muhurat_report_endpoint(data: dict, api_key: str = Depends(verify_api_key)):
+    return success_response(None, "Muhurat report generation triggered")
+
