@@ -119,7 +119,7 @@ async def generate_blog_batch(request: BlogBatchRequest, api_key: str = Depends(
 @router.get("/list", response_model=SuccessResponse)
 async def list_blogs(status: Optional[str] = None, category: Optional[str] = None, page: int = 1, limit: int = 25, api_key: str = Depends(verify_api_key)):
     try:
-        query = supabase.table("blogs").select("id, title, slug, status, created_at")
+        query = supabase.table("blogs").select("*")
         if status:
             query = query.eq("status", status)
         if category:

@@ -66,6 +66,10 @@ class TempleEnrichRequest(BaseModel):
 class TempleBulkEnrichRequest(BaseModel):
     limit: int = 10
 
+class TempleBulkStatusRequest(BaseModel):
+    ids: List[str]
+    status: str
+
 # --- Panchang & Calendar ---
 class PanchangData(BaseModel):
     date: str

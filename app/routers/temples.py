@@ -263,3 +263,11 @@ async def bulk_enrich_temples(request: TempleBulkEnrichRequest, api_key: str = D
     except Exception as e:
         return error_response(str(e), 500)
 
+@router.patch("/bulk-status", response_model=SuccessResponse)
+async def bulk_status_update(request: TempleBulkStatusRequest, api_key: str = Depends(verify_api_key)):
+    try:
+        supabase.table("temples").update({"status": request.status}).in_("id", request.ids).execute()
+        return success_response({"updated": len(request.ids)}, f"Status updated to {request.status} for {len(request.ids)} temples")
+    except Exception as e:
+        return error_response(str(e), 500)
+
